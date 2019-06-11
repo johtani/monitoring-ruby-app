@@ -1,0 +1,34 @@
+heartbeat.monitors:
+- type: icmp
+  schedule: '@every 5s'
+  hosts:
+    - elasticsearch
+    - kibana
+    - postgresql
+    - ruby-app
+- type: http
+  schedule: '@every 5s'
+  urls:
+    - 'http://ruby-app:3000/jolokia'
+- type: tcp
+  enabled: true
+  schedule: '@every 5s'
+  hosts: ["tcp://postgresql:5432"]
+
+processors:
+- add_cloud_metadata: ~
+- add_docker_metadata: ~
+
+cloud.id: '${ELASTIC_CLOUD_ID}'
+cloud.auth: '${ELASTIC_CLOUD_AUTH:}'
+
+output.elasticsearch:
+  hosts: ['${ELASTICSEARCH_HOSTS:}']
+  protocol: "https"
+
+xpack.monitoring.enabled: true
+
+#setup.kibana:
+#setup.dashboards.enabled: true
+#setup.dashboards.retry.enabled: true
+#setup.dashboards.retry.interval: 5s

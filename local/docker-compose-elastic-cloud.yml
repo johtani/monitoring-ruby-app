@@ -1,0 +1,159 @@
+---
+version: '3'
+services:
+
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:$ELASTIC_VERSION
+    user: root
+    env_file:
+      - ".env"
+    environment:
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
+    container_name: metricbeat
+    # The commented sections below enable Metricbeat to monitor the Docker host,
+    # rather than the Metricbeat container. It's problematic with Docker for
+    # Windows, however, since "/proc", "/sys", etc. don't exist on Windows.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/hostfs/proc:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /:/hostfs:ro
+      # Provide a custom Metricbeat configuration
+      - ./config/cloud/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml
+    command: sh -c 'metricbeat -e'
+    restart: on-failure
+    depends_on:
+      - postgresql
+    networks: ['stack']
+
+  packetbeat:
+    image: docker.elastic.co/beats/packetbeat:$ELASTIC_VERSION
+    user: root
+    env_file:
+      - ".env"
+    environment:
+      # Since we did that, Packetbeat is not part of the "stack" Docker network
+      # that the other containers are connected to, and thus can't resolve the
+      # hostname "elasticsearch". Instead, we'll tell it to find Elasticsearch
+      # on "localhost", which is the Docker host machine in this context.
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
+    container_name: packetbeat
+    volumes:
+      - ./scripts:/mnt/scripts:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Provide a custom Packetbeat configuration
+      - ./config/cloud/packetbeat.yml:/usr/share/packetbeat/packetbeat.yml
+    # Packetbeat needs some elevated privileges capture network traffic.
+    # We'll grant them with POSIX capabilities.
+    cap_add: ['NET_RAW', 'NET_ADMIN']
+    # Use "host mode" networking to allow Packetbeat to capture traffic from
+    # real network interface on the host, rather than being isolated to the
+    # container's virtual interface.
+    command: sh -c 'packetbeat -e'
+    network_mode: host
+    restart: on-failure
+
+#  filebeat:
+#    image: docker.elastic.co/beats/filebeat:$ELASTIC_VERSION
+#    user: root
+#    environment:
+#      - ELASTICSEARCH_USERNAME=elastic
+#      - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
+#    container_name: filebeat
+#    # If the host system has logs at "/var/log", mount them at "/mnt/log"
+#    # inside the container, where Filebeat can find them.
+#    volumes:
+#      - ./scripts:/mnt/scripts:ro
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
+#      - /var/log:/mnt/log:ro
+#      - ruby-app-log:/mnt/ruby-app-log:ro
+#      - -log:/mnt/postgresql-log:ro
+#      # Provide a custom Filebeat configuration
+#      - ./config/cloud/filebeat.yml:/usr/share/filebeat/filebeat.yml
+#    command: sh -c 'filebeat -e'
+#    networks: ['stack']
+#    # depends_on: ['kibana']
+#    restart: on-failure
+#
+#  heartbeat:
+#    image: docker.elastic.co/beats/heartbeat:$ELASTIC_VERSION
+#    user: root
+#    environment:
+#      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+#      - ELASTICSEARCH_USERNAME=elastic
+#      - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
+#      - KIBANA_HOSTS=http://kibana:5601
+#    container_name: heartbeat
+#    volumes:
+#      - ./scripts:/mnt/scripts:ro
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
+#      # Provide a custom Heartbeat configuration
+#      - ./config/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml
+#    command: sh -c '/mnt/scripts/wait-for $DEBUG_WAIT_FOR http://elastic:$ELASTIC_PASSWORD@kibana:5601/api/status && heartbeat -e'
+#    networks: ['stack']
+#    depends_on: ['kibana']
+#    restart: on-failure
+
+  postgresql:
+    image: postgres:11.3
+    environment:
+      - POSTGRES_USER=apm
+      - POSTGRES_PASSWORD=foobar
+      - POSTGRES_DB=apm_demo_app
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+      timeout: 20s
+      retries: 10
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: ['stack']
+
+  ruby-app:
+    build: ../ruby-app
+    image: rubyapp
+    env_file:
+      - "../ruby-app/.env.dev"
+    #command: bundle exec rails s -p 3000 -b '0.0.0.0'
+    command: bundle exec puma -C config/puma.rb
+    volumes:
+      - ../ruby-app:/webapp
+      - bundle:/usr/local/bundle
+      - ruby-app-log:/webapp/log
+      - public-data:/webapp/public
+      - tmp-data:/webapp/tmp
+    ports:
+      - "3000:3000"
+    environment:
+      POSTGRESQL_HOST: postgresql
+    depends_on:
+      - postgresql
+    networks: ['stack']
+
+  nginx:
+    build: ../nginx
+    image: nginx-monitoring-ruby
+    ports:
+      - "80:80"
+    volumes:
+      - public-data:/webapp/public
+      - tmp-data:/webapp/tmp
+      - nginx-log:/var/log/nginx
+    depends_on:
+      - ruby-app
+    networks: ['stack']
+
+networks:
+  stack: {}
+
+volumes:
+  bundle: {}
+  db-data: {}
+  public-data: {}
+  ruby-app-log:
+  postgresql-log: {}
+  nginx-log: {}
+  tmp-data: {}

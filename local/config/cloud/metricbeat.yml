@@ -1,0 +1,49 @@
+metricbeat.modules:
+
+- module: system
+  metricsets:
+    - cpu
+    - load
+    - core
+    - diskio
+    - filesystem
+    - fsstat
+    - memory
+    - network
+    - process
+    - socket
+  enabled: true
+  period: 10s
+  processes: ['.*']
+  cgroups: true
+
+- module: docker
+  metricsets: ["cpu", "info", "memory", "network", "diskio", "container"]
+  hosts: ["unix:///var/run/docker.sock"]
+  enabled: true
+  period: 10s
+
+#- module: nginx
+#  period: 10s
+#  host: ["http://nginx"]
+
+- module: postgresql
+  hosts: ["postgres://apm:foobar@postgresql:5432"]
+
+processors:
+- add_cloud_metadata: ~
+- add_docker_metadata: ~
+
+cloud.id: '${ELASTIC_CLOUD_ID:}'
+cloud.auth: '${ELASTIC_CLOUD_AUTH:}'
+
+output.elasticsearch:
+  hosts: ['${ELASTICSEARCH_HOSTS:}']
+  protocol: "https"
+
+xpack.monitoring.enabled: true
+
+#setup.kibana:
+#setup.dashboards.enabled: true
+#setup.dashboards.retry.enabled: true
+#setup.dashboards.retry.interval: 5s

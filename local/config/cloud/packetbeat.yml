@@ -1,0 +1,34 @@
+packetbeat.interfaces.device: any
+
+packetbeat.flows:
+  timeout: 30s
+  period: 10s
+
+packetbeat.protocols.dns:
+  ports: [53]
+  include_authorities: true
+  include_additionals: true
+
+packetbeat.protocols.http:
+  ports: [80, 3000]
+
+packetbeat.protocols.pgsql:
+  ports: [5432]
+
+processors:
+- add_cloud_metadata: ~
+- add_docker_metadata: ~
+
+cloud.id: '${ELASTIC_CLOUD_ID}'
+cloud.auth: '${ELASTIC_CLOUD_AUTH:}'
+
+output.elasticsearch:
+  hosts: ['${ELASTICSEARCH_HOSTS:}']
+  protocol: "https"
+
+xpack.monitoring.enabled: true
+
+#setup.kibana:
+#setup.dashboards.enabled: true
+#setup.dashboards.retry.enabled: true
+#setup.dashboards.retry.interval: 5s

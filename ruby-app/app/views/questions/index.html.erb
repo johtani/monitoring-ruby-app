@@ -1,0 +1,25 @@
+<h4>質問</h4>
+<p>ユーザにより登録された質問のリストです。Voteの数でソートされます。
+  <%= link_to '質問を投稿', new_question_path %>から新しい質問を登録できます。</p>
+
+<% @questions.each do |question| %>
+  <div class="card" style="margin-bottom: 20px">
+    <div class="card-body">
+      <h4 class="card-title">#<span><%= question.id %></span> <span><%= question.title %></span></h4>
+      <h6 class="card-subtitle mb-2 text-muted">
+        <span th:text="${question.numVotes}"/> 票。投稿者：<strong><%= question.author %></strong>。
+        投稿日時：<em><%= question.created_at.to_s(:published_on) %></em>
+      </h6>
+      <th:block th:unless="${#lists.contains(votes, question.id)}">
+        <a id="vote-qid" th:id="'vote-'+${question.id}" onclick="return vote('/vote?question_id=1', 'vote-1')"
+           th:attr="onclick='\'return vote(' + @{/vote(question_id=${question.id})} + '), \'vote-' + ${question.id} + ');\''"
+           href="/vote" th:href="@{/vote(question_id=${question.id})}" class="btn btn-primary float-right" aria-label="Vote up">
+          <span class="fa fa-chevron-up" aria-hidden="true"></span> 投票</a>
+      </th:block>
+    </div>
+  </div>
+<% end %>
+<% if @questions.blank? %>
+<div class="alert alert-primary" role="alert">
+  まだ質問がありません。質問を<%= link_to '投稿しますか', new_question_path %>?</div>
+<% end %>

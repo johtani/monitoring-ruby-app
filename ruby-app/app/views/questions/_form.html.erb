@@ -1,0 +1,27 @@
+<%= form_with(model: question, local: true) do |form| %>
+  <% if question.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(question.errors.count, "error") %> prohibited this question from being saved:</h2>
+
+      <ul>
+      <% question.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= form.label :title, '質問', :class => 'control-label col-xs-2' %>
+    <%= form.text_field :title, :class => 'form-control' %>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :author, '投稿者', :class => 'control-label col-xs-2' %>
+    <%= form.text_field :author, :class => 'form-control' %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit '投稿', :class => 'btn btn-primary float-right' %>
+  </div>
+<% end %>
