@@ -10,12 +10,14 @@
         <%= question.votes.count %> 票。投稿者：<strong><%= question.author %></strong>。
         投稿日時：<em><%= question.created_at.to_s(:published_on) %></em>
       </h6>
-      <th:block th:unless="${#lists.contains(votes, question.id)}">
-        <a id="vote-qid" th:id="'vote-'+${question.id}" onclick="return vote('/vote?question_id=1', 'vote-1')"
-           th:attr="onclick='\'return vote(' + @{/vote(question_id=${question.id})} + '), \'vote-' + ${question.id} + ');\''"
-           href="/vote" th:href="@{/vote(question_id=${question.id})}" class="btn btn-primary float-right" aria-label="Vote up">
+      <% if !@votes.include?(question.id) %>
+        <%= link_to question_vote_path(:id => question.id),
+                    :class => 'btn btn-primary float-right',
+                    :id => "vote-#{question.id}",
+                  'aria-label' => "Vote up" do %>
           <span class="fa fa-chevron-up" aria-hidden="true"></span> 投票</a>
-      </th:block>
+        <% end %>
+      <% end %>
     </div>
   </div>
 <% end %>

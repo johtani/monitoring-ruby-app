@@ -26,6 +26,8 @@ class QuestionsController < ApplicationController
                 .group(:id)
                 .order('count(votes.session_key) desc')
                 .order(created_at: :asc)
+    session_id = session.id
+    @votes = Vote.where(:session_key => session_id).pluck(:question_id)
   end
 
   # GET /questions/new
