@@ -2,14 +2,17 @@ heartbeat.monitors:
 - type: icmp
   schedule: '@every 5s'
   hosts:
-    - elasticsearch
-    - kibana
     - postgresql
     - ruby-app
+    - nginx
 - type: http
   schedule: '@every 5s'
   urls:
-    - 'http://ruby-app:3000/jolokia'
+    - 'http://nginx:80/logo.svg'
+- type: http
+  schedule: '@every 5s'
+  urls:
+    - 'http://nginx:80/about/about'
 - type: tcp
   enabled: true
   schedule: '@every 5s'

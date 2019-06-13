@@ -18,5 +18,27 @@ module App
 
     # For Elastic APM
     config.elastic_apm.service_name = 'MonitoringRubyDemo'
+
+    # nomarl logging
+    config.log_tags = [ :request_id ]
+
+    if ENV['RAILS_LOG_TO_STDOUT'].present?
+      logger           = ActiveSupport::Logger.new(STDOUT)
+      logger.formatter = proc do |severity, time, progname, msg|
+        request_id = msg.match(/\[(.*?)\].*/)[1] rescue ''
+        entry = {
+            severity: severity,
+            progname: 'rails',
+            request_id: request_id,
+            time: time,
+            message: msg,
+        }
+        "#{entry.to_json}\n"
+      end
+      config.logger    = ActiveSupport::TaggedLogging.new(logger)
+      config.colorize_logging = false
+    else
+      # default configure ..
+    end
   end
 end

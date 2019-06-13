@@ -1,7 +1,9 @@
 Rails.application.configure do
   #path = "#{Rails.root}/log/lograge_#{Rails.env}.log"
-  config.lograge.logger = ActiveSupport::Logger.new STDOUT
   config.lograge.enabled = true
+  config.lograge.keep_original_rails_log = true
+  #config.lograge.logger = ActiveSupport::Logger.new STDOUT
+  config.lograge.logger = ActiveSupport::Logger.new "#{Rails.root}/log/lograge_#{Rails.env}.log"
   config.lograge.formatter = Lograge::Formatters::Json.new
   # add time to lograge
   config.lograge.custom_options = lambda do |event|

@@ -55,46 +55,46 @@ services:
     network_mode: host
     restart: on-failure
 
-#  filebeat:
-#    image: docker.elastic.co/beats/filebeat:$ELASTIC_VERSION
-#    user: root
-#    environment:
-#      - ELASTICSEARCH_USERNAME=elastic
-#      - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
-#    container_name: filebeat
-#    # If the host system has logs at "/var/log", mount them at "/mnt/log"
-#    # inside the container, where Filebeat can find them.
-#    volumes:
-#      - ./scripts:/mnt/scripts:ro
-#      - /var/run/docker.sock:/var/run/docker.sock:ro
-#      - /var/log:/mnt/log:ro
-#      - ruby-app-log:/mnt/ruby-app-log:ro
-#      - -log:/mnt/postgresql-log:ro
-#      # Provide a custom Filebeat configuration
-#      - ./config/cloud/filebeat.yml:/usr/share/filebeat/filebeat.yml
-#    command: sh -c 'filebeat -e'
-#    networks: ['stack']
-#    # depends_on: ['kibana']
-#    restart: on-failure
-#
-#  heartbeat:
-#    image: docker.elastic.co/beats/heartbeat:$ELASTIC_VERSION
-#    user: root
-#    environment:
-#      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-#      - ELASTICSEARCH_USERNAME=elastic
-#      - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
-#      - KIBANA_HOSTS=http://kibana:5601
-#    container_name: heartbeat
-#    volumes:
-#      - ./scripts:/mnt/scripts:ro
-#      - /var/run/docker.sock:/var/run/docker.sock:ro
-#      # Provide a custom Heartbeat configuration
-#      - ./config/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml
-#    command: sh -c '/mnt/scripts/wait-for $DEBUG_WAIT_FOR http://elastic:$ELASTIC_PASSWORD@kibana:5601/api/status && heartbeat -e'
-#    networks: ['stack']
-#    depends_on: ['kibana']
-#    restart: on-failure
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:$ELASTIC_VERSION
+    user: root
+    env_file:
+      - ".env"
+    environment:
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
+    container_name: filebeat
+    # If the host system has logs at "/var/log", mount them at "/mnt/log"
+    # inside the container, where Filebeat can find them.
+    volumes:
+      - ./scripts:/mnt/scripts:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log:/mnt/log:ro
+      - ruby-app-log:/mnt/ruby-app-log:ro
+      - postgresql-log:/mnt/postgresql-log:ro
+      # Provide a custom Filebeat configuration
+      - ./config/cloud/filebeat.yml:/usr/share/filebeat/filebeat.yml
+    command: sh -c 'filebeat -e'
+    networks: ['stack']
+    restart: on-failure
+
+  heartbeat:
+    image: docker.elastic.co/beats/heartbeat:$ELASTIC_VERSION
+    user: root
+    env_file:
+      - ".env"
+    environment:
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
+    container_name: heartbeat
+    volumes:
+      - ./scripts:/mnt/scripts:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Provide a custom Heartbeat configuration
+      - ./config/cloud/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml
+    command: sh -c 'heartbeat -e'
+    networks: ['stack']
+    restart: on-failure
 
   postgresql:
     image: postgres:11.3
@@ -102,6 +102,7 @@ services:
       - POSTGRES_USER=apm
       - POSTGRES_PASSWORD=foobar
       - POSTGRES_DB=apm_demo_app
+      - PGOPTIONS=-c logging_collector=yes -c log_directory='/var/log/postgresql'
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
       timeout: 20s
@@ -110,6 +111,7 @@ services:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+      - postgresql-log:/var/log/postgresql
     networks: ['stack']
 
   ruby-app:
