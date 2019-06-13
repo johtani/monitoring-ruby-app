@@ -1,10 +1,31 @@
 class QuestionsController < ApplicationController
-  before_action :set_question, only: [:show, :edit, :update, :destroy]
+  before_action :set_question, only: [:vote, :destroy]
+
+  # POST /questions/1/vote
+  def vote
+    # get session key
+    session_id = session.id
+    logger.info("Session id : ["+session_id+"]")
+    # get question
+    # get vote
+    votes = Vote.where(:question_id => params[:id], :session_key => session_id)
+    if votes.empty?
+      @vote = Vote.new(:question_id => params[:id], :session_key => session_id)
+      @vote.save
+    end
+    respond_to do |format|
+      format.html {redirect_to root_path}
+      format.json {redirect_to root_path}
+    end
+  end
 
   # GET /questions
   # GET /questions.json
   def index
-    @questions = Question.all
+    @questions = Question.left_joins(:votes)
+                .group(:id)
+                .order('count(votes.session_key) desc')
+                .order(created_at: :asc)
   end
 
   # GET /questions/new
@@ -19,24 +40,10 @@ class QuestionsController < ApplicationController
 
     respond_to do |format|
       if @question.save
-        format.html { redirect_to :index}
+        format.html { redirect_to root_path }
         format.json { render :show, status: :created, location: @question }
       else
         format.html { render :new }
-        format.json { render json: @question.errors, status: :unprocessable_entity }
-      end
-    end
-  end
-
-  # PATCH/PUT /questions/1
-  # PATCH/PUT /questions/1.json
-  def update
-    respond_to do |format|
-      if @question.update(question_params)
-        format.html { redirect_to @question, notice: 'Question was successfully updated.' }
-        format.json { render :show, status: :ok, location: @question }
-      else
-        format.html { render :edit }
         format.json { render json: @question.errors, status: :unprocessable_entity }
       end
     end

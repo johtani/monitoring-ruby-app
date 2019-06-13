@@ -7,7 +7,7 @@
     <div class="card-body">
       <h4 class="card-title">#<span><%= question.id %></span> <span><%= question.title %></span></h4>
       <h6 class="card-subtitle mb-2 text-muted">
-        <span th:text="${question.numVotes}"/> 票。投稿者：<strong><%= question.author %></strong>。
+        <%= question.votes.count %> 票。投稿者：<strong><%= question.author %></strong>。
         投稿日時：<em><%= question.created_at.to_s(:published_on) %></em>
       </h6>
       <th:block th:unless="${#lists.contains(votes, question.id)}">
