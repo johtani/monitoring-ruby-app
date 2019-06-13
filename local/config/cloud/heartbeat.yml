@@ -8,7 +8,7 @@ heartbeat.monitors:
 - type: http
   schedule: '@every 5s'
   urls:
-    - 'http://nginx:80/logo.svg'
+    - 'http://nginx:80/server-status'
 - type: http
   schedule: '@every 5s'
   urls:

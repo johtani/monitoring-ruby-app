@@ -41,7 +41,6 @@ services:
       - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
     container_name: packetbeat
     volumes:
-      - ./scripts:/mnt/scripts:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Provide a custom Packetbeat configuration
       - ./config/cloud/packetbeat.yml:/usr/share/packetbeat/packetbeat.yml
@@ -67,11 +66,11 @@ services:
     # If the host system has logs at "/var/log", mount them at "/mnt/log"
     # inside the container, where Filebeat can find them.
     volumes:
-      - ./scripts:/mnt/scripts:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/log:/mnt/log:ro
       - ruby-app-log:/mnt/ruby-app-log:ro
       - postgresql-log:/mnt/postgresql-log:ro
+      - nginx-log:/mnt/nginx-log:ro
       # Provide a custom Filebeat configuration
       - ./config/cloud/filebeat.yml:/usr/share/filebeat/filebeat.yml
     command: sh -c 'filebeat -e'
@@ -88,7 +87,6 @@ services:
       - ELASTICSEARCH_PASSWORD=$ELASTIC_PASSWORD
     container_name: heartbeat
     volumes:
-      - ./scripts:/mnt/scripts:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Provide a custom Heartbeat configuration
       - ./config/cloud/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml
@@ -125,7 +123,6 @@ services:
       - ../ruby-app:/webapp
       - bundle:/usr/local/bundle
       - ruby-app-log:/webapp/log
-      - public-data:/webapp/public
       - tmp-data:/webapp/tmp
     ports:
       - "3000:3000"
@@ -141,7 +138,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - public-data:/webapp/public
+      - ../ruby-app/public:/webapp/public:ro
       - tmp-data:/webapp/tmp
       - nginx-log:/var/log/nginx
     depends_on:
@@ -154,7 +151,6 @@ networks:
 volumes:
   bundle: {}
   db-data: {}
-  public-data: {}
   ruby-app-log:
   postgresql-log: {}
   nginx-log: {}

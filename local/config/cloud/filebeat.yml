@@ -24,6 +24,14 @@ filebeat.modules:
     enabled: true
     var.paths: ["/mnt/postgresql-log/*"]
 
+- module: nginx
+  access:
+    enabled: true
+    var.paths: ["/mnt/nginx-log/access.log*"]
+  error:
+    enabled: true
+    var.paths: ["/mnt/nginx-log/error.log*"]
+
 processors:
 - add_cloud_metadata: ~
 - add_docker_metadata: ~
