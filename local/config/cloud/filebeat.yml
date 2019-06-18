@@ -9,8 +9,7 @@ filebeat.inputs:
     - /mnt/ruby-app-log/lograge_*.log
   fields_under_root: true
   fields:
-    application: java
-    layer: ruby
+    application: ruby
   json.keys_under_root: true
   json.add_error_key: true
 
