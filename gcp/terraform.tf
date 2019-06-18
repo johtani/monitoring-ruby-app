@@ -6,13 +6,19 @@ provider "google" {
   region      = "${var.region}"
 }
 
-# For get zone list
+# For getting zone list
 data "google_compute_zones" "available" {}
 
 # Network settings
-resource "google_compute_firewall" "default" {
+
+resource "google_compute_network" "demo_network" {
+  name = "johtani-demo-network"
+}
+
+## Firewall settings
+resource "google_compute_firewall" "demo_firewall" {
   name    = "demo-firewall"
-  network = "${google_compute_network.default.name}"
+  network = "${google_compute_network.demo_network.name}"
 
   allow {
     protocol = "icmp"
@@ -23,11 +29,8 @@ resource "google_compute_firewall" "default" {
     ports    = ["22", "443", "3000", "5432"]
   }
 
+  source_ranges = ["0.0.0.0/0"]
   source_tags = ["web"]
-}
-
-resource "google_compute_network" "default" {
-  name = "test-network"
 }
 
 # DNS zone settings
@@ -48,7 +51,7 @@ resource "google_compute_instance" "database" {
     }
   }
   network_interface {
-    network       = "default"
+    network       = "${google_compute_network.demo_network.name}"
     access_config {}
   }
 }
@@ -76,7 +79,7 @@ resource "google_compute_instance" "frontend" {
     }
   }
   network_interface {
-    network       = "default"
+    network       = "${google_compute_network.demo_network.name}"
     access_config {}
   }
 }
