@@ -12,7 +12,7 @@ data "google_compute_zones" "available" {}
 # Network settings
 
 resource "google_compute_network" "demo_network" {
-  name = "johtani-demo-network"
+  name = "${var.demo_name}-network"
 }
 
 ## Firewall settings
@@ -26,7 +26,7 @@ resource "google_compute_firewall" "demo_firewall" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "443", "3000", "5432"]
+    ports    = ["22", "80", "443", "3000", "5432"]
   }
 
   source_ranges = ["0.0.0.0/0"]
@@ -41,10 +41,10 @@ resource "google_dns_managed_zone" "demo_domain" {
 
 # create the database instance
 resource "google_compute_instance" "database" {
-  name         = "database-johtani-demo"
+  name         = "database-${var.demo_name}"
   machine_type = "${var.machine_type}"
   zone         = "${data.google_compute_zones.available.names[0]}"
-  tags         = ["database"]
+  tags         = ["database", "${var.demo_name}"]
   boot_disk {
     initialize_params {
       image = "${var.operating_system}"
@@ -69,10 +69,10 @@ resource "google_dns_record_set" "database" {
 
 resource "google_compute_instance" "frontend" {
 
-  name         = "frontend-johtani-demo"
+  name         = "frontend-${var.demo_name}"
   machine_type = "${var.machine_type}"
   zone         = "${data.google_compute_zones.available.names[0]}"
-  tags         = ["frontend"]
+  tags         = ["frontend", "${var.demo_name}"]
   boot_disk {
     initialize_params {
       image = "${var.operating_system}"
@@ -87,6 +87,14 @@ resource "google_compute_instance" "frontend" {
 ## frontend DNS entries
 resource "google_dns_record_set" "frontend" {
   name         = "frontend.${google_dns_managed_zone.demo_domain.dns_name}"
+  managed_zone = "${google_dns_managed_zone.demo_domain.name}"
+  type         = "A"
+  ttl          = 60
+  rrdatas      = [ "${google_compute_instance.frontend.network_interface.0.access_config.0.nat_ip}" ]
+}
+
+resource "google_dns_record_set" "apex" {
+  name         = "${google_dns_managed_zone.demo_domain.dns_name}"
   managed_zone = "${google_dns_managed_zone.demo_domain.name}"
   type         = "A"
   ttl          = 60

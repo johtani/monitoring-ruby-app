@@ -2,7 +2,7 @@
 # Options: f1-micro, g1-small, n1-standard-1, n1-standard-2, n1-standard-4
 # Override: -var 'machine_type=your-machine_type'
 variable "machine_type" {
-  default = "f1-micro"
+  default = "g1-small"
 }
 
 # Default GCP region
@@ -27,4 +27,9 @@ variable "project_id" {}
 # Override: -var 'operating_system=ubuntu-os-cloud/ubuntu-minimal-1804-lts'
 variable "operating_system" {
   default = "ubuntu-os-cloud/ubuntu-minimal-1804-lts"
+}
+
+# Demo name
+variable "demo_name" {
+  default = "johtani-demo"
 }
