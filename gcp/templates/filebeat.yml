@@ -1,0 +1,45 @@
+filebeat.inputs:
+
+  # Collect the JSON log files from the Spring Boot apps
+  - type: log
+    paths:
+      - /webapp/log/lograge_*.log
+    fields_under_root: true
+    fields:
+      application: ruby
+    json.keys_under_root: true
+    json.add_error_key: true
+
+
+filebeat.modules:
+  - module: auditd
+  - module: system
+{% if inventory_hostname_short == 'frontend' %}
+  - module: nginx
+{% endif %}
+{% if inventory_hostname_short == 'backend' %}
+  - module: postgresql
+{% endif %}
+
+
+name: "{{ inventory_hostname }}"
+tags: ["{{ env }}", "gcp"]
+
+
+processors:
+  - add_cloud_metadata: ~
+  - add_host_metadata: ~
+
+
+xpack.monitoring.enabled: true
+
+cloud.id: "${EC_ID}"
+cloud.auth: "${EC_AUTH}"
+
+output.elasticsearch:
+  hosts: ["localhost"]
+
+
+setup:
+  kibana:
+  dashboards.enabled: true

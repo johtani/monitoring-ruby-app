@@ -1,0 +1,11 @@
+[all]
+backend.johtani.dev ansible_python_interpreter=/usr/bin/python3
+frontend.johtani.dev ansible_python_interpreter=/usr/bin/python3
+
+
+[backend]
+backend.johtani.dev
+
+
+[frontend]
+frontend.johtani.dev

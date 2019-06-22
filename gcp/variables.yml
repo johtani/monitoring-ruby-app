@@ -1,0 +1,50 @@
+# Version to install
+elastic_version: 7.1.1
+elastic_download: https://artifacts.elastic.co
+
+
+# Elastic Cloud credentials
+elasticsearch_host: "{{ lookup('env', 'ELASTICSEARCH_HOST') }}"
+elasticsearch_user: "{{ lookup('env', 'ELASTICSEARCH_USER') }}"
+elasticsearch_password: "{{ lookup('env', 'ELASTICSEARCH_PASSWORD') }}"
+elasticsearch_cloud_id: "{{ lookup('env','ELASTICSEARCH_CLOUD_ID') }}"
+elasticsearch_cloud_auth: "{{ lookup('env','ELASTICSEARCH_CLOUD_AUTH') }}"
+elastic_apm_cloud_id: "{{ lookup('env','ELASTIC_APM_SERVER_URL') }}"
+elastic_apm_cloud_secret_token: "{{ lookup('env','ELASTIC_APM_SECRET_TOKEN') }}"
+
+# Setup of the infrastructure
+env: production
+domain: johtani.dev
+backend_server: https://backend.{{ domain }}
+frontend_server: https://frontend.{{ domain }}
+
+
+# PostgreSQL config
+postgresql_server: backend.{{ domain }}
+postgresql_user: "app"
+postgresql_password: "foobar"
+postgresql_database: apm_demo_app
+
+
+# Credentials for Kibana dashboard-only mode
+attendee_user: dashboard
+attendee_password: secret
+
+# demo_name
+demo_name: "johtani_demo"
+
+# ruby & rbenv
+rbenv_install_dir: /usr/local/rbenv
+ruby_version: 2.6.3
+
+rbenv_apt_packages:
+  - build-essential
+  - curl
+  - git
+  - libcurl4-openssl-dev
+  - libffi-dev
+  - libreadline-dev
+  - libssl-dev
+  - libxml2-dev
+  - libxslt1-dev
+  - zlib1g-dev

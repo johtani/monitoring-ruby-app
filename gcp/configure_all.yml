@@ -1,0 +1,169 @@
+- hosts: "all"
+  become: true
+  gather_facts: yes
+
+
+  vars_files:
+    - variables.yml
+
+
+  pre_tasks:
+    - name: Install Python2 to make Ansible work
+      raw: sudo apt-get update && sudo apt-get -y install python-minimal
+
+
+  post_tasks:
+    - include_tasks: include_event.yml
+      vars:
+        application: configure_all
+
+
+  tasks:
+
+
+    # System
+    - name: Update and upgrade apt packages
+      apt: upgrade=dist
+
+    - name: Install NTP to avoid time drift and PIP to manage Python dependencies plus its build tools
+      apt:
+        name: [ 'ntp', 'ntpdate', 'python3-pip', 'build-essential', 'libssl-dev', 'libffi-dev' ]
+
+    - name: Install the pyOpenSSL library, so Ansible can use it to check TLS certificates
+      pip: name=pyopenssl
+
+
+    # Beats
+    - name: Set the Elasticsearch cloud.id for Beats
+      lineinfile:
+        dest: /tmp/cred_cloud_id
+        line: "{{ elasticsearch_cloud_id }}"
+        state: present
+        create: yes
+        mode: 0600
+
+    - name: Set the Elasticsearch cloud.auth for Beats
+      lineinfile:
+        dest: /tmp/cred_cloud_auth
+        line: "{{ elasticsearch_cloud_auth }}"
+        state: present
+        create: yes
+        mode: 0600
+
+    - name: Get the Beats
+      apt: deb={{ elastic_download }}/downloads/beats/{{ item }}/{{ item }}-{{ elastic_version }}-amd64.deb
+      loop:
+        - auditbeat
+        - filebeat
+        - metricbeat
+        - packetbeat
+
+    - name: Change the Beats configuration
+      template: "src=templates/{{ item }}.yml dest=/etc/{{ item }}/{{ item }}.yml"
+      loop:
+        - auditbeat
+        - filebeat
+        - metricbeat
+        - packetbeat
+
+    - name: Create the Beats keystores
+      command: "{{ item }} keystore create --force"
+      loop:
+        - auditbeat
+        - filebeat
+        - metricbeat
+        - packetbeat
+
+    - name: Set the cloud.id in the Beats keystore files
+      shell: cat /tmp/cred_cloud_id | {{ item }} keystore add EC_ID --stdin --force
+      loop:
+        - auditbeat
+        - filebeat
+        - metricbeat
+        - packetbeat
+
+    - name: Set the cloud.auth in the Beats keystore files
+      shell: cat /tmp/cred_cloud_auth | {{ item }} keystore add EC_AUTH --stdin --force
+      loop:
+        - auditbeat
+        - filebeat
+        - metricbeat
+        - packetbeat
+
+    - name: Remove the cloud.auth file
+      file:
+        path: /tmp/cred_cloud_id
+        state: absent
+
+    - name: Remove the cloud.auth file
+      file:
+        path: /tmp/cred_cloud_auth
+        state: absent
+
+    - name: Restart and make sure the Beats autostart
+      service: name={{ item }} state=restarted enabled=yes
+      loop:
+        - auditbeat
+        - filebeat
+        - metricbeat
+        - packetbeat
+
+    - name: Wait if the Beats are actually running
+      pause: minutes=1
+
+    - name: Get the state of all services and check the status of Auditbeat
+      service_facts: ~
+      failed_when: ansible_facts.services.auditbeat.state != "running"
+
+    - name: Get the state of all services and check the status of Filebeat
+      service_facts: ~
+      failed_when: ansible_facts.services.filebeat.state != "running"
+
+    - name: Get the state of all services and check the status of Metricbeat
+      service_facts: ~
+      failed_when: ansible_facts.services.metricbeat.state != "running"
+
+    - name: Get the state of all services and check the status of Packetbeat
+      service_facts: ~
+      failed_when: ansible_facts.services.packetbeat.state != "running"
+
+
+    # TLS
+    - name: Add the certbot repository
+      apt_repository: repo="ppa:certbot/certbot"
+
+    - name: Install certbot and update the cache for the new PPA
+      apt: name=python-certbot-nginx update_cache=yes
+
+    - name: Add the hostname to the certificates to create
+      set_fact:
+        certificates:
+          - "{{ inventory_hostname }}"
+
+    - name: Add more domains to the frontend certificate
+      set_fact:
+        certificates:
+          - "{{ inventory_hostname }}"
+          - "{{ domain }}"
+          - "www.{{ domain }}"
+      when: inventory_hostname_short == "frontend"
+
+    - name: Add more domains to the backend certificate
+      set_fact:
+        certificates:
+          - "{{ inventory_hostname }}"
+      when: inventory_hostname_short == "backend"
+
+    - name: Just to be extra sure, explicitly stop nginx (if it is installed)
+      service: name=nginx state=stopped
+      ignore_errors: yes
+
+    - name: Create the certificate
+      command: >
+        certbot certonly --non-interactive --standalone
+        --agree-tos --email admin@{{ domain }}
+        -d {{ certificates | join(',') }}
+        creates=/etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem
+
+    - name: Generate strong dhparams, but only if the file doesn't exist
+      command: openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048 creates=/etc/ssl/certs/dhparam.pem

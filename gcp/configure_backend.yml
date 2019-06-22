@@ -1,0 +1,123 @@
+- hosts: backend
+  become: true
+  gather_facts: yes
+
+
+  vars_files:
+    - variables.yml
+
+
+  post_tasks:
+    - include_tasks: include_event.yml
+      vars:
+        application: configure_backend
+
+
+  tasks:
+
+
+    # PostgreSQL
+    - name: Install the DEB packages required for Ansible's PostgreSQL modules
+      apt:
+        name: [ 'postgresql', 'postgresql-contrib', 'libpq-dev']
+
+    - name: Install psycopg2 package required for Ansible's PostgreSQL modules
+      pip: name=psycopg2
+
+    - name: Ensure the PostgreSQL service is running
+      service: name=postgresql state=started enabled=yes
+
+    - name: Create database with user and password
+      become_user: postgres
+      postgresql_db:
+        name: "{{ postgresql_database }}"
+        encoding: UTF-8
+        state: present
+
+    - name: Set password to administrator user
+      become_user: postgres
+      postgresql_user:
+        name: postgres
+        password: "{{ elasticsearch_password }}"
+        encrypted: yes
+
+    - name: Create app user
+      become_user: postgres
+      postgresql_user:
+        db: "{{ postgresql_database }}"
+        name: "{{ postgresql_user }}"
+        password: "{{ postgresql_password }}"
+        login_password: "{{ elasticsearch_password }}"
+        priv: "ALL"
+        state: present
+
+    - name: Edit postgresql.conf to allow remote access
+      lineinfile:
+        dest: /etc/postgresql/10/main/postgresql.conf
+        regexp: "^#listen_addresses = 'localhost'		# what IP address(es) to listen on;$"
+        line: "listen_addresses = '*'		# what IP address(es) to listen on;"
+        backup: yes
+        state: present
+
+    - name: Edit pg_hba.conf to allow remote access
+      lineinfile:
+        dest: /etc/postgresql/10/main/pg_hba.conf
+        line: "host    all    all    0.0.0.0/0    md5"
+        backup: yes
+        state: present
+
+    - name: Restart PostgreSQL and make sure it autostarts
+      service: name=postgresql state=restarted enabled=yes
+
+
+    # Heartbeat
+    - name: Set the Elasticsearch cloud.id for Beats
+      lineinfile:
+        dest: /tmp/cred_cloud_id
+        line: "{{ elasticsearch_cloud_id }}"
+        state: present
+        create: yes
+        mode: 0600
+
+    - name: Set the Elasticsearch cloud.auth for Beats
+      lineinfile:
+        dest: /tmp/cred_cloud_auth
+        line: "{{ elasticsearch_cloud_auth }}"
+        state: present
+        create: yes
+        mode: 0600
+
+    - name: Install Heartbeat
+      apt: deb={{ elastic_download }}/downloads/beats/heartbeat/heartbeat-{{ elastic_version }}-amd64.deb
+
+    - name: Change the Heartbeat configuration
+      template: src=templates/heartbeat.yml dest=/etc/heartbeat/heartbeat.yml
+
+    - name: Create the Heartbeat keystore
+      command: heartbeat keystore create --force
+
+    - name: Set the cloud.id in the Beats keystore files
+      shell: cat /tmp/cred_cloud_id | heartbeat keystore add EC_ID --stdin --force
+
+    - name: Set the cloud.auth in the Beats keystore files
+      shell: cat /tmp/cred_cloud_auth | heartbeat keystore add EC_AUTH --stdin --force
+
+    - name: Remove the cloud.auth file
+      file:
+        path: /tmp/cred_cloud_id
+        state: absent
+
+    - name: Remove the cloud.auth file
+      file:
+        path: /tmp/cred_cloud_auth
+        state: absent
+
+    - name: Restart Heartbeat and make sure it autostarts
+      service: name=heartbeat-elastic state=restarted enabled=yes
+
+    - name: Wait if Heartbeat is actually running
+      pause: minutes=1
+
+    - name: Get the state of all services and check the status of Heartbeat
+      service_facts: ~
+      failed_when: ansible_facts.services["heartbeat-elastic"].state != "running"

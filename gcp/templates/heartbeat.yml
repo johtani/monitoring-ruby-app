@@ -1,0 +1,41 @@
+heartbeat.monitors:
+  - type: icmp
+    schedule: '@every 5s'
+    hosts:
+      - frontend.{{ domain }}
+      - backend.{{ domain }}
+
+  - type: http
+    urls: ["https://www.{{ domain }}/about/about"]
+    schedule: "@every 10s"
+    timeout: 3s
+    check.response.status: 200
+
+  - type: http
+    urls: ["https://www.{{ domain }}/server-status"]
+    schedule: "@every 10s"
+    timeout: 3s
+    check.response.status: 200
+
+  - type: tcp
+    hosts: ["tcp://backend.{{ domain }}:5432"]
+    schedule: "@every 10s"
+    timeout: 3s
+    name: postgresql
+
+
+name: "{{ inventory_hostname }}"
+tags: ["{{ env }}", "gcp"]
+
+
+processors:
+  - add_cloud_metadata: ~
+  - add_host_metadata: ~
+
+xpack.monitoring.enabled: true
+
+cloud.id: "${EC_ID}"
+cloud.auth: "${EC_AUTH}"
+
+output.elasticsearch:
+  hosts: ["localhost"]

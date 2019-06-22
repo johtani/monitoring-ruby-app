@@ -1,0 +1,174 @@
+- hosts: frontend
+  become: true
+  gather_facts: yes
+
+
+  vars_files:
+    - variables.yml
+
+
+  post_tasks:
+    - include_tasks: include_event.yml
+      vars:
+        application: configure_frontend
+
+
+  tasks:
+
+
+    # Rails app
+    #    - name: Rails app deploy
+    - name: Install rbenv dependencies
+      apt:
+        pkg: "{{ rbenv_apt_packages }}"
+
+    - name: does rbenv exist?
+      stat:
+        path: "{{ rbenv_install_dir }}"
+      register: dir_stat
+
+    - name: install rbenv
+      git:
+        repo: https://github.com/sstephenson/rbenv.git
+        dest: "{{ rbenv_install_dir }}"
+      when: dir_stat.stat.isdir is not defined and not ansible_check_mode
+
+    - name: install ruby-build
+      git:
+        repo: https://github.com/sstephenson/ruby-build.git
+        dest: "{{ rbenv_install_dir }}/plugins/ruby-build"
+      when: dir_stat.stat.isdir is not defined and not ansible_check_mode
+
+    - name: set env
+      blockinfile:
+        dest: /root/.bash_profile
+        create: yes
+        insertafter: '^PATH=\$PATH:\$HOME/bin$'
+        content: |
+          export RBENV_ROOT={{ rbenv_install_dir }}
+          export PATH="$RBENV_ROOT/bin:$PATH"
+          export DATABASE_USER={{ postgresql_user }}
+          export DATABASE_PASSWORD={{ postgresql_password }}
+          export POSTGRESQL_HOST=backend.{{ domain }}
+          export ELASTIC_APM_SERVER_URL={{ elastic_apm_cloud_id }}
+          export ELASTIC_APM_SECRET_TOKEN={{ elastic_apm_cloud_secret_token }}
+          export RAILS_ENV=production
+          export RAILS_SERVE_STATIC_FILES=true
+          eval "$(rbenv init -)"
+
+    - name: Check rbenv version
+      shell: bash -lc "rbenv versions | grep {{ ruby_version }}"
+      register: rbenv_check_install
+      changed_when: False
+      ignore_errors: yes
+
+    - name: install ruby
+      shell: bash -lc "rbenv install -v {{ ruby_version }}"
+      when: rbenv_check_install|failed
+
+    - name: rbenv rehash
+      shell: bash -lc "rbenv rehash {{ ruby_version }}"
+      when: rbenv_check_install|failed
+
+    - name: Check ruby version
+      shell: bash -lc "rbenv version | grep {{ ruby_version }}"
+      register: rbenv_check_default
+      changed_when: False
+      ignore_errors: yes
+
+    - name: Set default ruby version
+      shell: bash -lc "rbenv global {{ ruby_version }}"
+      when: rbenv_check_default|failed
+
+    - name: Copy Rails app dir to server
+      synchronize:
+        src: ../ruby-app/
+        dest: /webapp/
+        recursive: yes
+
+    # update bundler
+    - name: Update bundler with Gemfile
+      shell: bash -lc "gem install bundler:2.0.1"
+      args:
+        chdir: /webapp
+
+    # precompile
+    - name: Precompile css/js files
+      shell: bash -lc "bundle exec rake assets:precompile"
+      args:
+        chdir: /webapp
+
+    # Stop rails if running
+    - name: Stop Rails app
+      shell: bash -lc "bundle exec pumactl stop"
+      args:
+        chdir: /webapp
+      ignore_errors: yes
+
+    # Stop rails if running
+    - name: Migrate db
+      shell: bash -lc "rake db:migrate"
+      args:
+        chdir: /webapp
+      ignore_errors: yes
+
+    # bundle install
+    - name: bundle install (if app already exists)
+      shell: bash -lc "bundle install"
+      args:
+        chdir: /webapp
+
+    # Run rails
+    - name: Run Rails app
+      shell: bash -lc "bundle exec pumactl start"
+      args:
+        chdir: /webapp
+
+    # nginx
+    - name: Install nginx
+      apt: name=nginx
+
+    - name: Set a global TLS configuration
+      template: src=templates/tls.conf dest=/etc/nginx/tls.conf
+
+    - name: Change the nginx configuration
+      template: src=templates/nginx.conf dest=/etc/nginx/sites-available/default
+
+    - name: Restart nginx and make sure it autostarts
+      service: name=nginx state=restarted enabled=yes
+
+    - name: Check HTTP
+      uri:
+        url: "http://{{ inventory_hostname }}"
+        follow_redirects: none
+        status_code: 301
+      register: response
+      retries: 3
+      delay: 2
+      delegate_to: 127.0.0.1
+      become: false
+
+    - name: Fail if HTTP is not being redirected to HTTPS
+      fail:
+      when: response.status != 301
+
+    - name: Check HTTPS
+      openssl_certificate:
+        path: /etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem
+        provider: assertonly
+        issuer:
+          O: Let's Encrypt
+        has_expired: false
+        subject_alt_name:
+          - "DNS:{{ inventory_hostname }}"
+
+    - name: Check HTTPS apex
+      openssl_certificate:
+        path: /etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem
+        provider: assertonly
+        issuer:
+          O: Let's Encrypt
+        has_expired: false
+        subject_alt_name:
+          - "DNS:{{ domain }}"
+      when: inventory_hostname_short == "frontend"

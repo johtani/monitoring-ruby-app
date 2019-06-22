@@ -1,0 +1,79 @@
+packetbeat.interfaces.device: any
+
+
+packetbeat.flows:
+  timeout: 30s
+  period: 10s
+
+
+packetbeat.protocols:
+
+  - type: icmp
+    enabled: true
+
+  - type: dns
+    ports: [53]
+
+{% if inventory_hostname_short == 'frontend' %}
+  - type: http
+    ports: [80, 3000]
+    real_ip_header: "X-Forwarded-For"
+{% endif %}
+
+{% if inventory_hostname_short == 'backend' %}
+  - type: pgsql
+    ports: [5432]
+{% endif %}
+
+  - type: tls
+    ports: [443]
+
+
+packetbeat.procs:
+  enabled: true
+  monitored:
+
+{% if inventory_hostname_short == 'frontend' %}
+  - process: nginx
+    cmdline_grep: nginx
+  - process: ruby
+    cmdline_grep: ruby
+{% endif %}
+{% if inventory_hostname_short == 'backend' %}
+  - process: pgsql
+    cmdline_grep: pgsql
+{% endif %}
+
+
+name: "{{ inventory_hostname }}"
+tags: ["{{ env }}", "gcp"]
+
+
+processors:
+
+  - add_cloud_metadata: ~
+  - add_host_metadata: ~
+
+  - drop_event:
+      when:
+        or:
+          # Exclude pinging metrics via REST and JMX
+          - contains.path: "/metrics/"
+          # Exclude pinging health
+          - equals.path: "/health"
+          # Exclude nginx status
+          - equals.path: "/server-status"
+
+
+xpack.monitoring.enabled: true
+
+cloud.id: "${EC_ID}"
+cloud.auth: "${EC_AUTH}"
+
+output.elasticsearch:
+  hosts: ["localhost"]
+
+
+setup:
+  kibana:
+  dashboards.enabled: true
