@@ -7,7 +7,8 @@ filebeat.inputs:
     fields_under_root: true
     fields:
       application: ruby
-    json.keys_under_root: true
+# TODO set true if Lograge can change json key name
+#    json.keys_under_root: true
     json.add_error_key: true
 
 
