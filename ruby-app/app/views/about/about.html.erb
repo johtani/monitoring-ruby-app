@@ -1,33 +1,35 @@
   <h4>デモについて</h4>
 
   <h5>Beats</h5>
-  <p>
-    The <a href="https://www.elastic.co/products/beats">Beats</a> are lightweight data shippers, written in Go, that you install on your servers to capture all sorts of operational data (think of logs, metrics, or network packet data). The Beats send the
-    operational data to Elasticsearch, either directly or via Logstash, so it can be visualized with Kibana.
-  </p>
+    <a href="https://www.elastic.co/products/beats">Beats</a>は軽量データシッパーで、Go言語で開発されています。
+  実際に取得したいデータ（パケット、メトリック、ログなど）が存在するサーバーにインストールして利用します。
+  BeatsはデータをElasticsearchに直接送信したり、Logstashを経由して送信することができ、Kibanaなどを利用して可視化します。
 
   <h5>Elastic APM</h5>
   <p>
-    <a href="https://www.elastic.co/solutions/apm">Elastic APM</a> is an application performance monitoring system built on the Elastic Stack. It uses Elasticsearch as its data store and allows you to monitor software services and applications in real time.
-    Regardless of whether your code is best described as a service or as an application, this guide will indiscriminately use the word service.
+    <a href="https://www.elastic.co/solutions/apm">Elastic APM</a>は、Elastic Stackを使うアプリケーションパフォーマンス監視システムです。
+    Elasticsearchにデータを保存し、ソフトウェアサービスやアプリケーションをリアルタイムに監視することができます。
   </p>
 
-  <h5>Demo scenario</h5>
+  <h5>デモシナリオ</h5>
   <div class="text-center">
     <img src="/scenario.png" class="img-fluid" alt="scenario diagram" />
   </div>
 
   <p>
-    This demo runs on Kubernetes, it's composed of a simple Spring Boot app and with a Nginx frontend. It uses MySQL as data backend.
+    このデモはGCP上に構築されており、Nginx＋Railsのフロントエンドおよび、PostgreSQLのバックエンドサーバーから構築されています。
   </p>
 
   <p>
-    Everything is monitored using Beats and <a href="https://www.elastic.co/guide/en/apm/get-started/master/index.html">Elastic APM</a>.
+    利用しているBeatsとAPMのリンクは次の通りです。
 
   <ul>
-    <li><a href="https://www.elastic.co/guide/en/beats/filebeat/current/running-on-kubernetes.html">Filebeat</a> ships logs from all running containers, enriched with Kubernetes metadata</li>
-    <li><a href="https://www.elastic.co/guide/en/beats/metricbeat/current/running-on-kubernetes.html">Metricbeat</a> ships system metrics for all nodes in the cluster and Kubernetes metrics on containers resource consumption and state</li>
-    <li><a href="https://www.elastic.co/guide/en/beats/packetbeat/current/index.html">Packetbeat</a> monitors the network and applications by sniffing packets</li>
-    <li><a href="https://www.elastic.co/guide/en/apm/get-started/current/index.html">Elastic APM</a> gather tracing timing data from your applications</li>
+    <li><a href="https://www.elastic.co/guide/en/beats/auditbeat/current/index.html">Auditbeat</a> はOSの監査ログ（プロセスの軌道停止、ファイル改ざん）を集めて送信します。</li>
+    <li><a href="https://www.elastic.co/guide/en/beats/heartbeat/current/index.html">Heartbeat</a> は死活監視のためのデータを取得し、送信します。</li>
+    <li><a href="https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-getting-started.html">Filebeat</a> はマシンやコンテナからログを送信します。送信時にメタデータを追加してくれます。</li>
+    <li><a href="https://www.elastic.co/guide/en/beats/metricbeat/current/metricbeat-getting-started.html">Metricbeat</a> はマシンやコンテナのメトリックを送信します。送信時にメタデータを追加してくれます。</li>
+    <li><a href="https://www.elastic.co/guide/en/beats/packetbeat/current/index.html">Packetbeat</a> はネットワークをモニターし、パケットから様々な情報を取り出して監視できます。</li>
+    <li><a href="https://www.elastic.co/guide/en/apm/get-started/current/index.html">Elastic APM</a> はアプリケーションからトレースデータを見ることができます。</li>
+    <li><a href="https://www.elastic.co/guide/en/apm/agent/ruby/current/index.html">Elastic APM Ruby Agent</a> はRuby向けのAPMエージェントです。RailsやRackにも対応しています。</li>
   </ul>
   </p>
