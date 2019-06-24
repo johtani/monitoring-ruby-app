@@ -8,12 +8,12 @@ Rails.application.configure do
   # add time to lograge
   config.lograge.custom_options = lambda do |event|
     {
-        timestamp: Time.now,
+        "@timestamp": Time.now,
         :params => event.payload[:params],
         :level => event.payload[:level],
         exception: event.payload[:exception],
         exception_object: event.payload[:exception_object],
-        backtrace: event.payload[:exception_object].try(:backtrace)
+        backtrace: event.payload[:exception_object]
     }
   end
 end
