@@ -33,6 +33,10 @@ class QuestionsController < ApplicationController
   # GET /questions/new
   def new
     @question = Question.new
+    author = session[:author]
+    if author.present?
+      @question.author = author
+    end
   end
 
   # POST /questions
@@ -42,6 +46,7 @@ class QuestionsController < ApplicationController
 
     respond_to do |format|
       if @question.save
+        session[:author] = @question.author
         format.html { redirect_to root_path }
         format.json { render :show, status: :created, location: @question }
       else
