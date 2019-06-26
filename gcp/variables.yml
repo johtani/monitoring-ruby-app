@@ -48,3 +48,5 @@ rbenv_apt_packages:
   - libxml2-dev
   - libxslt1-dev
   - zlib1g-dev
+  - libpq-dev
+  - nodejs
