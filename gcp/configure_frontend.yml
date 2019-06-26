@@ -31,13 +31,13 @@
       git:
         repo: https://github.com/sstephenson/rbenv.git
         dest: "{{ rbenv_install_dir }}"
-      when: dir_stat.stat.isdir is not defined and not ansible_check_mode
+      when: rbenv_install_dir is not defined and not ansible_check_mode
 
     - name: install ruby-build
       git:
         repo: https://github.com/sstephenson/ruby-build.git
         dest: "{{ rbenv_install_dir }}/plugins/ruby-build"
-      when: dir_stat.stat.isdir is not defined and not ansible_check_mode
+      when: rbenv_install_dir is not defined and not ansible_check_mode
 
     - name: set env
       blockinfile:
@@ -64,11 +64,11 @@
 
     - name: install ruby
       shell: bash -lc "rbenv install -v {{ ruby_version }}"
-      when: rbenv_check_install|failed
+      when: rbenv_check_install is failed
 
     - name: rbenv rehash
       shell: bash -lc "rbenv rehash {{ ruby_version }}"
-      when: rbenv_check_install|failed
+      when: rbenv_check_install is failed
 
     - name: Check ruby version
       shell: bash -lc "rbenv version | grep {{ ruby_version }}"
@@ -78,7 +78,7 @@
 
     - name: Set default ruby version
       shell: bash -lc "rbenv global {{ ruby_version }}"
-      when: rbenv_check_default|failed
+      when: rbenv_check_default is failed
 
     - name: Copy Rails app dir to server
       synchronize:
@@ -89,6 +89,12 @@
     # update bundler
     - name: Update bundler with Gemfile
       shell: bash -lc "gem install bundler:2.0.1"
+      args:
+        chdir: /webapp
+
+    # bundle install
+    - name: Bundle install
+      shell: bash -lc "bundle install"
       args:
         chdir: /webapp
 
