@@ -30,7 +30,12 @@ tags: ["{{ env }}", "gcp"]
 processors:
   - add_cloud_metadata: ~
   - add_host_metadata: ~
-
+{% if inventory_hostname_short == 'frontend' %}
+  - convert:
+    mode: "rename"
+    fields:
+      - {from: "json.error", to: "json.error_msg", type: "string"}
+  {% endif %}
 
 xpack.monitoring.enabled: true
 
