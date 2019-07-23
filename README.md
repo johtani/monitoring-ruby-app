@@ -51,17 +51,37 @@ Elastic Cloudを利用することで、
 ### GCP
 
 必要なツール : `gcloud`、`terraform`、`ansible`
-必要な情報 : ドメイン
+必要なサービス : [Elastic Cloud Elasticsearch Service](https://www.elastic.co/products/elasticsearch/service)
+必要な情報 : ドメイン（デモサイトをユーザーにも公開するため）
 
 
-TODO : まだ途中
+1. Elastic Cloudに`variables.yml`の`elastic_version`と同じバージョンのElasticsearchおよびKibanaを起動する。
+2. 次の環境変数を設定する。(`gcp/setenv.sh.sample`にそれぞれ値を設定してください。)
+    * ELASTICSEARCH_CLOUD_ID - Cloud ID を設定（詳細は[ドキュメントを参照](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html)）
+    * ELASTICSEARCH_CLOUD_AUTH - Cloud Auth を設定（詳細は[ドキュメントを参照](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html)）
+    * ELASTIC_APM_SERVER_URL - Elastic Cloud 上のElastic APM ServerのURL（[詳細はこちら](https://www.elastic.co/guide/en/cloud/current/ec-create-deployment.html)）
+    * ELASTIC_APM_SECRET_TOKEN - Elastic Cloud 上のElastic APM Serverの管理コンソール上にある`APM Server secret token`の文字列 
+    * ELASTICSEARCH_USER - インデックスへの書き込み権限Kibanaの設定権限があるElasticsearchのユーザー
+    * ELASTICSEARCH_PASSWORD - インデックスへの書き込み権限Kibanaの設定権限があるElasticsearchのユーザーのパスワード
+    * ELASTICSEARCH_HOST - Elastic Cloud上のElasticsearchへのアクセスURL
+3. 必要に応じて`valicables.tf`の設定（ドメインやインスタンスタイプなど）を変更
+4. `gcp`ディレクトリに移動
+5. `TF_VAR_project_id`を設定（GCPに関する設定）
+6. `terraform init` で初期化（GCPに関するプラグインを入れる前）。その後`terraform plan`を実行して、設定ファイルの記述ミスなどがないかを確認。
+7. `terraform apply`を実行して、インスタンスやDNSの設定をGCP上に反映（ここまでがGCP上の環境の設定）。
+8. `ansible-playbook configure_all.yml`で2台のインスタンスにBeatsなどのセットアップ(ここからはAnsibleでアプリなどのデプロイ)
+9. `ansible-playbook configure_backend.yml`でDBサーバー、Heartbeatをセットアップ
+10. `ansible-playbook configure_frontend.yml`でNGINX、Railsをセットアップ
 
-1. Create the Elastic Cloud instance with the same version as specified in variables.yml's elastic_version, enable Kibana as well as the GeoIP & user agent plugins, and set the environment variables with the values for ELASTICSEARCH_HOST, ELASTICSEARCH_USER, ELASTICSEARCH_PASSWORD, KIBANA_HOST, KIBANA_ID, APM_HOST, and APM_TOKEN.
+環境が必要なくなったら、`terraform apply`を実行すればGCPのインスタンスやDNSの設定などが削除されます。
 
+_※ TODO `google_dns_managed_zone`の設定でゾーンを指定する方法が不明のため、手動で、Google Domainsのネームサーバーの設定をTerraformでApplyした時に割り当てられたゾーンに合わせる必要がある_
+_
 
 ### Local
 
 TODO : まだ途中
+GCP対応以前にローカルで動作確認のために利用してたましたが、
 
 #### Start
 
