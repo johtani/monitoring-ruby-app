@@ -56,7 +56,7 @@ Elastic Cloudを利用することで、
 
 
 1. Elastic Cloudに`variables.yml`の`elastic_version`と同じバージョンのElasticsearchおよびKibanaを起動する。
-2. 次の環境変数を設定する。(`gcp/setenv.sh.sample`にそれぞれ値を設定してください。)
+2. 次の環境変数を設定する。(`gcp/setenv.sh.sample`にそれぞれ値を設定し、`source ./setenv.sh`を実行する。)
     * ELASTICSEARCH_CLOUD_ID - Cloud ID を設定（詳細は[ドキュメントを参照](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html)）
     * ELASTICSEARCH_CLOUD_AUTH - Cloud Auth を設定（詳細は[ドキュメントを参照](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html)）
     * ELASTIC_APM_SERVER_URL - Elastic Cloud 上のElastic APM ServerのURL（[詳細はこちら](https://www.elastic.co/guide/en/cloud/current/ec-create-deployment.html)）
@@ -73,7 +73,7 @@ Elastic Cloudを利用することで、
 9. `ansible-playbook configure_backend.yml`でDBサーバー、Heartbeatをセットアップ
 10. `ansible-playbook configure_frontend.yml`でNGINX、Railsをセットアップ
 
-環境が必要なくなったら、`terraform apply`を実行すればGCPのインスタンスやDNSの設定などが削除されます。
+環境が必要なくなったら、`terraform destroy`を実行すればGCPのインスタンスやDNSの設定などが削除されます。
 
 _※ TODO `google_dns_managed_zone`の設定でゾーンを指定する方法が不明のため、手動で、Google Domainsのネームサーバーの設定をTerraformでApplyした時に割り当てられたゾーンに合わせる必要がある_
 _

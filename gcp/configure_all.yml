@@ -90,7 +90,7 @@
         - metricbeat
         - packetbeat
 
-    - name: Remove the cloud.auth file
+    - name: Remove the cloud.id file
       file:
         path: /tmp/cred_cloud_id
         state: absent

@@ -20,7 +20,7 @@
     #    - name: Rails app deploy
     - name: Install rbenv dependencies
       apt:
-        pkg: "{{ rbenv_apt_packages }}"
+        name: "{{ rbenv_apt_packages }}"
 
     - name: does rbenv exist?
       stat:
@@ -31,13 +31,13 @@
       git:
         repo: https://github.com/sstephenson/rbenv.git
         dest: "{{ rbenv_install_dir }}"
-      when: rbenv_install_dir is not defined and not ansible_check_mode
+#      when: rbenv_install_dir is not defined and not ansible_check_mode
 
     - name: install ruby-build
       git:
         repo: https://github.com/sstephenson/ruby-build.git
         dest: "{{ rbenv_install_dir }}/plugins/ruby-build"
-      when: rbenv_install_dir is not defined and not ansible_check_mode
+#      when: rbenv_install_dir is not defined and not ansible_check_mode
 
     - name: set env
       blockinfile:
