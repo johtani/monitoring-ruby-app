@@ -33,7 +33,7 @@ NGINX+Ruby on Railsをフロントエンドサーバーに、PostgreSQLをバッ
 （ローカル環境では、NGINXはRailsとは別のVMとして切り出してあります）。
 
 なお、Beats、APMのデータ保存先には[Elastic Cloud Elasticsearch Service](https://www.elastic.co/products/elasticsearch/service)を使用しています。
-Elastic Cloudを利用することで、
+Elastic Cloudを利用することで、APM Serverより先の部分をElastic Cloudにまかせてしまうことができ、簡単に導入ができるという利点があります。
 
 ## Structure of repository
 
