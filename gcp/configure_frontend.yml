@@ -20,7 +20,7 @@
     #    - name: Rails app deploy
     - name: Install rbenv dependencies
       apt:
-        name: "{{ rbenv_apt_packages }}"
+        pkg: "{{ rbenv_apt_packages }}"
 
     - name: does rbenv exist?
       stat:
